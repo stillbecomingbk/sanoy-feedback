@@ -2,11 +2,13 @@
 
 An ongoing feedback system for Sanoy to keep a tab on its customers and preferences.
 
-Live at https://stillbecomingbk.github.io/sanoy-feedback/
+    the form      https://stillbecomingbk.github.io/sanoy-feedback/
+    reading it    https://stillbecomingbk.github.io/sanoy-feedback/review.html
 
 Static site. No build step, no dependencies to install.
 
     index.html        the form: markup, app and all six translations
+    review.html       private dashboard — Google sign-in, search, CSV export
     runtime.js        Claude Design runtime, extracted from the original bundle
     vendor/           React 18.3.1 + React-DOM, pinned locally (no CDN)
     assets/           images and the two webfont families
@@ -22,6 +24,8 @@ Settings → Pages → Source: **Deploy from a branch** → `main` → `/ (root)
 
 Custom domain: add a file named `CNAME` at the root containing
 `feedback.sanoycare.com`, then point a CNAME record at `stillbecomingbk.github.io`.
+A new domain must also be added under Firebase → Authentication → Settings →
+Authorized domains, or sign-in on the review page will refuse to open.
 
 ## Languages
 
@@ -32,19 +36,43 @@ text prevails in case of discrepancy.
 
 ## Where the answers go
 
-`Code.gs` (supplied separately) is a Google Apps Script web app that writes
-each submission as a row in a Google Sheet and each photograph into a Drive
-folder. Deploy it as a web app (Execute as: Me, Who has access: Anyone),
-then put the resulting URL into `index.html`:
+Firestore, in the Firebase project `sanoy-feedback` (Mumbai region), as one
+document per response in the `responses` collection.
 
-    window.SANOY_ENDPOINT = 'https://script.google.com/macros/s/..../exec';
+This started as a Google Apps Script web app writing to a Sheet, and that
+cannot be made to work on a personal Google account: Apps Script has to ask
+for `spreadsheets` and `drive` — scopes Google now classes as sensitive —
+and it hard-blocks unverified apps that request them, with no way for the
+owner to approve it. Firestore's REST API is the path meant for a public
+web client: a browser key that identifies the project and grants nothing,
+with security rules doing the actual work.
 
-Until that is set the form still works and still thanks the respondent —
-it simply has nowhere to write.
+The rules, in `firestore.rules` terms:
 
-The sheet grows its own header row: each respondent answers about whichever
-products they actually used, so no two submissions carry the same field set.
-Columns are created on first sight and matched by name after that.
+    create   anyone, if the document has the expected shape
+    read     only bhanumeraki@gmail.com, signed in with Google
+    update   nobody, ever
+    delete   nobody, ever
 
-Photographs are downscaled in the browser to a 1600 px longest edge before
-they are sent, so a 6 MB phone photograph arrives as roughly 250 KB.
+Append-only is deliberate. A response is a record of what somebody actually
+said, and publishing a quote means standing behind it.
+
+Each document holds a few top-level fields for sorting and searching
+(`reference`, `submittedAt`, `language`, `overall`, `products`) plus a
+`record` map carrying every answer keyed by its own question. No two
+submissions share a field set — the form asks about whichever products
+that person used — and a map handles that without any schema to migrate.
+
+Photographs ride inside the document. Firebase Storage needs a paid plan,
+and Firestore allows 1 MiB per document, so the browser downscales to a
+1400 px longest edge at quality 0.78 — roughly 240 KB once base64-encoded,
+which leaves ample room. A 6 MB phone photograph arrives comfortably.
+
+## Reading responses
+
+`review.html` signs in with Google and lists everything, newest first, with
+search across all written answers and a CSV download. The CSV carries a
+UTF-8 BOM so Excel opens the Hindi, Telugu and Russian responses as text
+rather than mojibake.
+
+Everything is on the Firebase free tier. There is no card on the account.
