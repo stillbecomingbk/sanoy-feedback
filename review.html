@@ -174,6 +174,37 @@ function when(v) {
                                      hour:'2-digit', minute:'2-digit' });
 }
 
+// Firestore hands map keys back in its own order, which scrambles a response
+// into a jumble — email, then a skin reaction, then a product duration. These
+// put it back into the order the person was actually asked.
+const FIRST = ['Reference','Language','First name','Last initial','Email','Phone',
+  'Age','Skin','Profession','Role','Organisation','May name employer','Products used'];
+const MARKS = ['Overall mark','Frequency','Would keep using'];
+const GROUPS = ['How it feels','How it smells','How your skin reacted',
+  'Whether it worked','The object itself','The honest questions'];
+const LAST = ['Used before','Used before — other','Anything else',
+  'Confirmed accurate','Data consent','Photo supplied'];
+
+function rank(k) {
+  let i = FIRST.indexOf(k);            if (i >= 0) return [0, i, k];
+  if (/ — duration$/.test(k))          return [1, 0, k];
+  if (/ — outcome$/.test(k))           return [1, 1, k];
+  i = MARKS.indexOf(k);                if (i >= 0) return [2, i, k];
+  i = GROUPS.findIndex(g => k.indexOf(g + ' — ') === 0);
+  if (i >= 0)                          return [3, i, k];
+  const q = k.match(/^Q(\d+) /);       if (q) return [4, Number(q[1]), k];
+  i = LAST.indexOf(k);                 if (i >= 0) return [5, i, k];
+  if (k.indexOf('Consent — ') === 0)   return [6, 0, k];
+  return [7, 0, k];
+}
+
+function orderedKeys(rec) {
+  return Object.keys(rec).sort((a, b) => {
+    const x = rank(a), y = rank(b);
+    return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]);
+  });
+}
+
 function render() {
   const term = ($('q').value || '').trim().toLowerCase();
   const shown = term
@@ -223,7 +254,7 @@ function render() {
     body.className = 'body';
     const dl = document.createElement('dl');
     dl.className = 'grid';
-    for (const k of Object.keys(rec)) {
+    for (const k of orderedKeys(rec)) {
       const dt = document.createElement('dt'); dt.textContent = k;
       const dd = document.createElement('dd'); dd.textContent = rec[k];
       dl.append(dt, dd);
@@ -251,10 +282,11 @@ $('csv').onclick = () => {
   // One column per field ever seen, so a respondent who used a different
   // product simply adds columns rather than shifting anyone else's row.
   const cols = ['reference', 'submittedAt', 'language', 'firstName', 'email', 'overall', 'products'];
-  const recCols = [];
+  const seen = [];
   rows.forEach(r => Object.keys(r.record || {}).forEach(k => {
-    if (!recCols.includes(k)) recCols.push(k);
+    if (!seen.includes(k)) seen.push(k);
   }));
+  const recCols = orderedKeys(Object.fromEntries(seen.map(k => [k, 1])));
   const head = cols.concat(recCols, ['photo']);
   const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const lines = [head.map(esc).join(',')];
