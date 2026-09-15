@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Sanoy — feedback received</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Jost:wght@200;300;400;500&display=swap">
+<style>
+  :root{
+    --ink:#111111; --ink-soft:#5A5A55; --ink-faint:#9C9C95;
+    --paper:#F3F1F2; --card:#FFFFFF; --rule:#DEDEDA; --accent:#7A6A46;
+    --pad-top:env(safe-area-inset-top,0px); --pad-bot:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font:300 15px/1.6 'Jost',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    padding-top:var(--pad-top); padding-bottom:var(--pad-bot);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  header{border-bottom:1px solid var(--rule);background:var(--paper);position:sticky;top:0;z-index:10}
+  header .wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:18px}
+  .mark{font:500 19px/1 'Jost';letter-spacing:.26em;text-transform:uppercase}
+  .sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint)}
+  .spacer{flex:1 1 auto}
+  button{font:400 12px/1 'Jost';letter-spacing:.14em;text-transform:uppercase;
+    padding:11px 18px;border:1px solid var(--ink);background:var(--ink);color:#fff;
+    cursor:pointer;border-radius:0}
+  button.ghost{background:transparent;color:var(--ink)}
+  button:disabled{opacity:.4;cursor:default}
+  h1{font:300 46px/1.08 'Cormorant Garamond',Georgia,serif;margin:44px 0 10px;letter-spacing:-.01em}
+  h1 em{font-style:italic}
+  .lede{color:var(--ink-soft);max-width:60ch;margin:0 0 30px}
+  .panel{background:var(--card);border:1px solid var(--rule);padding:30px;margin:26px 0}
+  .stats{display:flex;gap:40px;flex-wrap:wrap;margin:28px 0 8px}
+  .stat b{display:block;font:300 36px/1 'Cormorant Garamond',Georgia,serif}
+  .stat span{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:22px 0}
+  input[type=search]{font:300 14px 'Jost';padding:10px 12px;border:1px solid var(--rule);
+    background:var(--card);color:var(--ink);min-width:220px;flex:1 1 220px}
+  .card{background:var(--card);border:1px solid var(--rule);margin:14px 0}
+  .card>summary{padding:18px 20px;cursor:pointer;list-style:none;display:flex;gap:16px;
+    align-items:baseline;flex-wrap:wrap}
+  .card>summary::-webkit-details-marker{display:none}
+  .card>summary:hover{background:#FAF9F9}
+  .who{font:400 17px/1.2 'Cormorant Garamond',Georgia,serif;font-size:19px}
+  .meta{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+  .score{margin-left:auto;font:400 13px 'Jost';letter-spacing:.1em;color:var(--accent);white-space:nowrap}
+  .body{padding:4px 20px 24px;border-top:1px solid var(--rule)}
+  .grid{display:grid;grid-template-columns:minmax(200px,1fr) 2fr;gap:2px 22px;margin-top:16px}
+  .grid dt{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);
+    padding:7px 0;border-bottom:1px solid #F0EFEE}
+  .grid dd{margin:0;padding:7px 0;border-bottom:1px solid #F0EFEE;word-break:break-word}
+  .photo{margin-top:20px}
+  .photo img{max-width:260px;border:1px solid var(--rule)}
+  .empty{color:var(--ink-faint);padding:40px 0;text-align:center}
+  .err{border-left:3px solid #A8332B;padding:14px 18px;background:#fff;margin:20px 0;color:#7A241E}
+  .note{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+  a{color:var(--accent)}
+  @media (max-width:640px){
+    h1{font-size:34px}
+    .grid{grid-template-columns:1fr;gap:0}
+    .grid dt{border-bottom:none;padding-bottom:0}
+    .score{margin-left:0;width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <div>
+    <div class="mark">Sanoy</div>
+    <div class="sub">Feedback received</div>
+  </div>
+  <div class="spacer"></div>
+  <span id="who" class="meta"></span>
+  <button id="csv" class="ghost" hidden>Download CSV</button>
+  <button id="auth">Sign in</button>
+</div></header>
+
+<div class="wrap">
+  <div id="gate">
+    <h1>Read what people <em>actually said.</em></h1>
+    <p class="lede">Sign in with the Google account that owns this project. Responses are
+      readable by that account and no one else — the form can add a response, but it
+      cannot read one back, and nothing here can be edited or deleted once written.</p>
+    <div class="panel">
+      <button id="auth2">Sign in with Google</button>
+      <p class="note">bhanumeraki@gmail.com</p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="stats">
+      <div class="stat"><b id="n">0</b><span>Responses</span></div>
+      <div class="stat"><b id="avg">—</b><span>Average mark</span></div>
+      <div class="stat"><b id="photos">0</b><span>With a photograph</span></div>
+      <div class="stat"><b id="langs">—</b><span>Languages</span></div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Search name, product, or anything written">
+      <span id="count" class="meta"></span>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <div id="err" class="err" hidden></div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, collection, getDocs, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyDKJXaX2R-FYSgLv8VZHojQNdUKTGRz7Bk",
+  authDomain: "sanoy-feedback.firebaseapp.com",
+  projectId: "sanoy-feedback",
+  appId: "1:21321845741:web:01475413d40a4ba960b5e4"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+const show = (el, on) => { el.hidden = !on; };
+const fail = (msg) => { $('err').textContent = msg; show($('err'), true); };
+
+let rows = [];
+
+$('auth').onclick = () => auth.currentUser ? signOut(auth) : signIn();
+$('auth2').onclick = signIn;
+
+function signIn() {
+  show($('err'), false);
+  const p = new GoogleAuthProvider();
+  p.setCustomParameters({ prompt: 'select_account' });
+  signInWithPopup(auth, p).catch(e => fail('Sign-in failed: ' + (e.code || e.message)));
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    show($('gate'), true); show($('app'), false); show($('csv'), false);
+    $('auth').textContent = 'Sign in'; $('who').textContent = '';
+    return;
+  }
+  $('who').textContent = user.email;
+  $('auth').textContent = 'Sign out';
+  show($('gate'), false);
+  try {
+    // orderBy on submittedAt needs no composite index — it is a single field.
+    const snap = await getDocs(query(collection(db, 'responses'), orderBy('submittedAt', 'desc')));
+    rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    show($('app'), true); show($('csv'), true);
+    render();
+  } catch (e) {
+    // The rules allow reads only for the owner, so a wrong account lands here.
+    fail(e.code === 'permission-denied'
+      ? 'Signed in as ' + user.email + ', which is not the account these responses belong to.'
+      : 'Could not load responses: ' + (e.code || e.message));
+    show($('app'), false); show($('csv'), false);
+  }
+});
+
+function when(v) {
+  if (!v) return '';
+  const d = v.toDate ? v.toDate() : new Date(v);
+  return d.toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric',
+                                     hour:'2-digit', minute:'2-digit' });
+}
+
+function render() {
+  const term = ($('q').value || '').trim().toLowerCase();
+  const shown = term
+    ? rows.filter(r => JSON.stringify(r.record || {}).toLowerCase().includes(term)
+                    || (r.firstName || '').toLowerCase().includes(term)
+                    || (r.products || '').toLowerCase().includes(term))
+    : rows;
+
+  const marks = rows.map(r => Number(r.overall) || 0).filter(Boolean);
+  $('n').textContent = rows.length;
+  $('avg').textContent = marks.length
+    ? (marks.reduce((a, b) => a + b, 0) / marks.length).toFixed(1) : '—';
+  $('photos').textContent = rows.filter(r => r.photo && r.photo.dataUrl).length;
+  $('langs').textContent = new Set(rows.map(r => r.language || 'en')).size;
+  $('count').textContent = shown.length === rows.length
+    ? '' : shown.length + ' of ' + rows.length + ' shown';
+
+  const list = $('list');
+  list.textContent = '';
+  if (!shown.length) {
+    const d = document.createElement('div');
+    d.className = 'empty';
+    d.textContent = rows.length ? 'Nothing matches that.' : 'No responses yet.';
+    list.append(d);
+    return;
+  }
+
+  for (const r of shown) {
+    const rec = r.record || {};
+    const card = document.createElement('details');
+    card.className = 'card';
+
+    const sum = document.createElement('summary');
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = [r.firstName, rec['Last initial']].filter(Boolean).join(' ') || 'Anonymous';
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = [when(r.submittedAt), r.reference, (r.language || 'en').toUpperCase(),
+                        r.products].filter(Boolean).join(' · ');
+    const score = document.createElement('span');
+    score.className = 'score';
+    score.textContent = r.overall ? r.overall + ' of 5' : '';
+    sum.append(who, meta, score);
+
+    const body = document.createElement('div');
+    body.className = 'body';
+    const dl = document.createElement('dl');
+    dl.className = 'grid';
+    for (const k of Object.keys(rec)) {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = rec[k];
+      dl.append(dt, dd);
+    }
+    body.append(dl);
+
+    if (r.photo && r.photo.dataUrl) {
+      const box = document.createElement('div');
+      box.className = 'photo';
+      const img = document.createElement('img');
+      img.src = r.photo.dataUrl;
+      img.alt = 'Photograph supplied by ' + (r.firstName || 'respondent');
+      box.append(img);
+      body.append(box);
+    }
+
+    card.append(sum, body);
+    list.append(card);
+  }
+}
+
+$('q').addEventListener('input', render);
+
+$('csv').onclick = () => {
+  // One column per field ever seen, so a respondent who used a different
+  // product simply adds columns rather than shifting anyone else's row.
+  const cols = ['reference', 'submittedAt', 'language', 'firstName', 'email', 'overall', 'products'];
+  const recCols = [];
+  rows.forEach(r => Object.keys(r.record || {}).forEach(k => {
+    if (!recCols.includes(k)) recCols.push(k);
+  }));
+  const head = cols.concat(recCols, ['photo']);
+  const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lines = [head.map(esc).join(',')];
+  rows.forEach(r => {
+    const rec = r.record || {};
+    const line = cols.map(c => esc(c === 'submittedAt' ? when(r[c]) : r[c]))
+      .concat(recCols.map(c => esc(rec[c])))
+      .concat([esc(r.photo && r.photo.dataUrl ? 'yes' : '')]);
+    lines.push(line.join(','));
+  });
+  // The BOM makes Excel open UTF-8 correctly — without it the Hindi,
+  // Telugu and Russian responses arrive as mojibake.
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sanoy-feedback-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+</script>
+</body></html>
