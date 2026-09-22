@@ -34,6 +34,33 @@ Product names, sizes and the company name stay in English by design.
 Each non-English version carries a governing-language note: the English
 text prevails in case of discrepancy.
 
+## One link per channel
+
+This form is the only way Sanoy collects feedback — online, in stores,
+sampling, events — so every answer records where it came from. Add tags to
+the link; each lands in the answer as `Source — …` (and in the CSV):
+
+    ?src=event&event=mumbai-popup&by=priya     an event, and who ran the stand
+    ?src=store&event=hyderabad-jubilee         a store
+    ?src=sampling&event=oct-sample-box         a sampling drop
+    ?src=instagram                             a post or story
+    ?src=email&event=8-week                    the follow-up email
+    ?utm_source=…&utm_medium=…&utm_campaign=…  also understood
+
+No tag = `direct`. Make a QR code from the tagged link for print.
+
+**Kiosk mode** — add `&kiosk=1` for a tablet on a stand: after each answer
+the form clears itself (30 seconds after the thank-you) for the next person.
+
+**No connection** — if the device is offline when someone presses send, the
+answer is kept on that device and sent automatically when the connection
+returns (next load, or the moment it comes back online). A refusal from the
+database is never hidden this way; only network failures are queued. Leave
+the kiosk tab open until it has been online again.
+
+Every answer gets its own reference (`SNY-F` + time + random); the old
+reference was worked out from the answers and two people could share one.
+
 ## Where the answers go
 
 Firestore, in the Firebase project `sanoy-feedback` (Mumbai region), as one
@@ -62,6 +89,7 @@ Each document holds a few top-level fields for sorting and searching
 `record` map carrying every answer keyed by its own question. No two
 submissions share a field set — the form asks about whichever products
 that person used — and a map handles that without any schema to migrate.
+The channel tags live inside `record` for that reason: no rule change.
 
 Photographs ride inside the document. Firebase Storage needs a paid plan,
 and Firestore allows 1 MiB per document, so the browser downscales to a
@@ -71,8 +99,8 @@ which leaves ample room. A 6 MB phone photograph arrives comfortably.
 ## Reading responses
 
 `review.html` signs in with Google and lists everything, newest first, with
-search across all written answers and a CSV download. The CSV carries a
-UTF-8 BOM so Excel opens the Hindi, Telugu and Russian responses as text
-rather than mojibake.
+search across all written answers and a CSV download. Each card shows the
+channel and event beside the reference. The CSV carries a UTF-8 BOM so Excel
+opens the Hindi, Telugu and Russian responses as text rather than mojibake.
 
 Everything is on the Firebase free tier. There is no card on the account.
