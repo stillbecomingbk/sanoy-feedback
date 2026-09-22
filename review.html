@@ -240,11 +240,13 @@ function render() {
     const sum = document.createElement('summary');
     const who = document.createElement('span');
     who.className = 'who';
-    who.textContent = [r.firstName, rec['Last initial']].filter(Boolean).join(' ') || 'Anonymous';
+    who.textContent = [r.firstName, rec['Last name'] || rec['Last initial']].filter(Boolean).join(' ') || 'Anonymous';
     const meta = document.createElement('span');
     meta.className = 'meta';
+    // Where it came from: the channel and event from the link it was sent through.
+    const src = [rec['Source — Channel'], rec['Source — Event or campaign']].filter(Boolean).join(' / ');
     meta.textContent = [when(r.submittedAt), r.reference, (r.language || 'en').toUpperCase(),
-                        r.products].filter(Boolean).join(' · ');
+                        r.products, src].filter(Boolean).join(' · ');
     const score = document.createElement('span');
     score.className = 'score';
     score.textContent = r.overall ? r.overall + ' of 5' : '';
