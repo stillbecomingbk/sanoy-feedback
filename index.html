@@ -1051,6 +1051,66 @@ function deviceFacts() {
   };
 }
 
+// Where this answer came from. Read once from the link, so every channel
+// gets its own link or QR code: ?src=event&event=mumbai-popup&by=priya,
+// plus the usual utm_* tags. Kept short and plain so nothing odd reaches
+// the database. ?kiosk=1 is for a tablet on a stand: the form clears itself
+// after each person.
+const SOURCE = (() => {
+  const out = {};
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const clean = (v) => String(v || '').replace(/[^\p{L}\p{N} _.@+-]/gu, '').trim().slice(0, 80);
+    out['Channel'] = clean(p.get('src') || p.get('utm_medium')) || 'direct';
+    out['Event or campaign'] = clean(p.get('event') || p.get('utm_campaign'));
+    out['Collected by'] = clean(p.get('by') || p.get('staff'));
+    out['Link source'] = clean(p.get('utm_source'));
+    out['Kiosk'] = p.get('kiosk') === '1' ? 'yes' : '';
+    out['Referrer'] = document.referrer ? clean(new URL(document.referrer).hostname) : '';
+  } catch (e) { out['Channel'] = out['Channel'] || 'direct'; }
+  return out;
+})();
+const KIOSK = SOURCE['Kiosk'] === 'yes';
+
+// Answers that could not be sent because the device was offline wait here
+// and go the moment the connection returns — so a stand with poor Wi-Fi
+// loses nothing. Only network failures are queued; a refusal from the
+// database is shown to the person, never hidden.
+const QUEUE_KEY = 'sanoy-feedback-queue';
+function readQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
+}
+function writeQueue(q) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); return true; } catch (e) { return false; }
+}
+async function flushQueue(url) {
+  const q = readQueue();
+  if (!q.length || !url) return;
+  const left = [];
+  for (const body of q) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+      if (!res.ok && res.status >= 500) left.push(body);
+    } catch (e) { left.push(body); }
+  }
+  writeQueue(left);
+}
+function responsesUrl() {
+  const cfg = (typeof window !== 'undefined' && window.SANOY_FIREBASE) || null;
+  if (!cfg || !cfg.projectId || !cfg.apiKey) return '';
+  return 'https://firestore.googleapis.com/v1/projects/' + cfg.projectId +
+         '/databases/(default)/documents/responses?key=' + cfg.apiKey;
+}
+// A reference nobody else can have: time plus randomness, not derived from
+// the answers (two people with the same name length used to share one).
+function newReference() {
+  const t = Date.now().toString(36).toUpperCase().slice(-5);
+  let r = '';
+  try { const a = new Uint8Array(2); crypto.getRandomValues(a); r = Array.from(a, b => (b % 36).toString(36)).join('').toUpperCase(); }
+  catch (e) { r = Math.random().toString(36).slice(2, 4).toUpperCase(); }
+  return 'SNY-F' + t + r;
+}
+
 // A page cannot read its own public address, so this asks. Given a short
 // leash and allowed to fail: nobody's feedback is worth losing to a slow
 // third party.
@@ -1150,7 +1210,7 @@ function guessLang() {
 
 class Component extends DCLogic {
   state = {
-    step: 0, done: false, sending: false, sendError: '',
+    step: 0, done: false, sending: false, sendError: '', ref: '',
     first: '', initial: '', email: '', phone: '', dialCC: guessCC(), age: '', skin: '', prof: '', profother: '', org: '', orgPublish: false,
     sel: {}, dur: {}, verdict: {},
     q: ['', '', '', '', ''], story: '', rate: {}, overall: 0, freq: -1, keepFreq: -1, lang: guessLang(),
@@ -3210,8 +3270,31 @@ class Component extends DCLogic {
     };
     this._onResize();
     window.addEventListener('resize', this._onResize);
+    this._onOnline = () => flushQueue(responsesUrl());
+    window.addEventListener('online', this._onOnline);
+    this._onOnline();
   }
-  componentWillUnmount() { window.removeEventListener('resize', this._onResize); }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('online', this._onOnline);
+    clearTimeout(this._kioskTimer);
+  }
+
+  // Everything back to a blank form for the next person, except the
+  // language chosen and the screen measurements.
+  resetAll = () => {
+    clearTimeout(this._kioskTimer);
+    this.setState({
+      step: 0, done: false, sending: false, sendError: '', ref: '',
+      first: '', initial: '', email: '', phone: '', dialCC: guessCC(), age: '', skin: '', prof: '', profother: '', org: '', orgPublish: false,
+      sel: {}, dur: {}, verdict: {},
+      q: ['', '', '', '', ''], story: '', rate: {}, overall: 0, freq: -1, keepFreq: -1,
+      brands: {}, brandother: '',
+      photo: null, photoName: '',
+      consent: [false, false, false, false], truth: false, dpc: false,
+    });
+    window.scrollTo(0, 0);
+  };
 
   // Deliberately forgiving. These catch a typo or a wrong field, not an
   // unusual name or an international number written in an unusual way.
@@ -3365,6 +3448,7 @@ class Component extends DCLogic {
     // behind what the person actually wrote.
     const tech = Object.assign({}, deviceFacts(), await networkFacts());
     Object.keys(tech).forEach((k) => { if (tech[k]) rec['Technical — ' + k] = tech[k]; });
+    Object.keys(SOURCE).forEach((k) => { if (SOURCE[k]) rec['Source — ' + k] = SOURCE[k]; });
 
     // Firestore wants every value tagged with its type.
     const recordFields = {};
@@ -3405,6 +3489,10 @@ class Component extends DCLogic {
       const err = await res.json().catch(() => null);
       return { ok: false, error: (err && err.error && err.error.status) || ('http_' + res.status) };
     } catch (err) {
+      // No connection: keep it on this device and send it when one returns.
+      const q = readQueue();
+      q.push(JSON.stringify({ fields: fields }));
+      if (writeQueue(q)) return { ok: true, queued: true };
       return { ok: false, error: String((err && err.message) || err) };
     }
   };
@@ -3666,7 +3754,7 @@ class Component extends DCLogic {
       x_sending: this.e('x_sending'),
       x_senderr: this.e('x_senderr'),
       x_progline: this.e('x_progpat').replace('{pct}', pct).replace('{mins}', names.length > 4 ? '6' : '4'),
-      x_refline: this.e('x_refpat').replace('{ref}', 'SNY-F' + (1000 + (names.length * 37 + (s.first || 'x').length * 11) % 9000)),
+      x_refline: this.e('x_refpat').replace('{ref}', s.ref || ''),
       x_age: this.e('x_age'),
       x_agenote: this.e('x_agenote'),
       x_bogo1: this.e('x_bogo1'),
@@ -3853,21 +3941,23 @@ class Component extends DCLogic {
       next: async () => {
         if (!ok || s.sending) return;
         if (single || s.step === 5) {
-          const reference = 'SNY-F' + (1000 + (names.length * 37 + (s.first || 'x').length * 11) % 9000);
-          this.setState({ sending: true, sendError: '' });
+          // One reference per answer, kept if a retry is needed.
+          const reference = s.ref || newReference();
+          this.setState({ sending: true, sendError: '', ref: reference });
           const r = await this.submit(reference);
           if (r.ok || r.error === 'no_endpoint') {
             // no_endpoint means the form is not wired yet; still thank the
             // respondent rather than losing them on a configuration problem.
             this.setState({ sending: false, done: true });
             window.scrollTo(0, 0);
+            if (KIOSK) this._kioskTimer = setTimeout(this.resetAll, 30000);
           } else {
             this.setState({ sending: false, sendError: r.error || 'send_failed' });
           }
         } else { this.setState({ step: s.step + 1 }); window.scrollTo(0, 0); }
       },
 
-      ref: 'SNY-F' + (1000 + (names.length * 37 + (s.first || 'x').length * 11) % 9000),
+      ref: s.ref || '',
       // Labels translated; values reuse what is already translated —
       // T.words for the overall wording, T.freq and T.keep for the two
       // habit answers, and R for each rating row's own label.
@@ -3904,7 +3994,7 @@ class Component extends DCLogic {
           { k: this.e('s_perms'), v: grantedList },
         ];
       })(),
-      restart: () => this.setState({ step: 0, done: false, sel: {}, dur: {}, verdict: {}, q: ['', '', '', '', ''], brands: {}, brandother: '', photo: null, photoName: '', consent: [false, false, false, false], truth: false, first: '', initial: '', email: '', phone: '', dialCC: guessCC(), age: '', skin: '' }),
+      restart: () => this.resetAll(),
     };
   }
 }
